@@ -29,8 +29,6 @@ val_data = unified_data['val']
 # upload 
 api = HfApi()
 for set_name, data in [("train", train_data), ("val", val_data)]:
-    if set_name != "val":
-        continue
     with open(f"{set_name}_release_data.json", 'w') as f:
         json.dump(data, f, indent=2)
     api.upload_file(
