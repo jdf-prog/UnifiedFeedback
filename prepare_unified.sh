@@ -17,3 +17,6 @@ for subdir in "$SUB_DATASETS_DIR"/*; do
         echo "python.py not found in $subdir"
     fi
 done
+
+echo "Executing prepare_unified.py"
+python ./prepare_unified.py
