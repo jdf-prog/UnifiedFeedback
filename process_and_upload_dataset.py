@@ -11,8 +11,18 @@ from huggingface_hub import HfApi
 from collections import defaultdict
 from itertools import combinations
 
+existed_dataset_sources = [
+    "lmsys/chatbot_arena_conversations",
+    "Anthropic/hh-rlhf",
+    "berkeley-nest/Nectar",
+    "openai/summarize_from_feedback(comparisons)",
+    "Dahoas/synthetic-instruct-gptj-pairwise",
+    "openbmb/UltraFeedback",
+    "argilla/ultrafeedback-binarized-preferences-cleaned",
+    "openai/webgpt_comparisons",
+]
 
-def reformat_data_from_hf_dataset(dataset_source: str, dataset_name: str, seed: int):
+def reformat_data_from_hf_dataset(dataset_source: str, dataset_name: str, seed: int, val_num: int = 1000):
     if dataset_source == "lmsys/chatbot_arena_conversations":
         dataset = load_dataset("lmsys/chatbot_arena_conversations")
         new_data = []
@@ -374,8 +384,13 @@ def reformat_data_from_hf_dataset(dataset_source: str, dataset_name: str, seed: 
             )
     else:
         raise NotImplementedError(f"Unknown dataset source: {dataset_source}, please add the processing code in process_and_upload_dataset.py")
-            
-    return new_data
+
+    random.seed(seed)
+    random_idx = random.sample(range(len(new_data)), val_num)
+    train_data = [new_data[i] for i in range(len(new_data)) if i not in random_idx]
+    val_data = [new_data[i] for i in range(len(new_data)) if i in random_idx]
+    
+    return train_data, val_data
 
 
 def main(
@@ -386,12 +401,17 @@ def main(
     val_num = 1000,
 ):
     random.seed(seed)
-    new_data = reformat_data_from_hf_dataset(dataset_source, dataset_name, seed)
-    
-    random.seed(seed)
-    random_idx = random.sample(range(len(new_data)), val_num)
-    train_data = [new_data[i] for i in range(len(new_data)) if i not in random_idx]
-    val_data = [new_data[i] for i in range(len(new_data)) if i in random_idx]
+    if dataset_source == 'all':
+        train_data = []
+        val_data = []
+        print("Processing all datasets")
+        for dataset_source in existed_dataset_sources:
+            print(f"Processing {dataset_source}")
+            _train_data, _val_data = reformat_data_from_hf_dataset(dataset_source, dataset_name, seed, val_num)
+            train_data.extend(_train_data)
+            val_data.extend(_val_data)
+    else:
+        train_data, val_data = reformat_data_from_hf_dataset(dataset_source, dataset_name, seed)
 
 
     features = datasets.Features({

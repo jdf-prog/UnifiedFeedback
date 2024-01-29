@@ -28,3 +28,8 @@ for i in {0..7}; do
         --to_upload_repo_id "$to_upload_repo_id"
 done
 echo Done
+
+python process_and_upload_dataset.py \
+    --dataset_source "all" \
+    --dataset_name "all" \
+    --to_upload_repo_id "$to_upload_repo_id"
