@@ -108,7 +108,13 @@ def reformat_data_from_hf_dataset(dataset_source: str, dataset_name: str, seed: 
                 "num_turns": len(convA) // 2,
                 "source": "Anthropic/hh-rlhf",
             }
-            new_data.append(new_item)
+            try:
+                assert len(convA) == len(convB), f"Error in {i}"
+                assert new_item['num_turns'] > 0, f"Error in {i}"
+                assert all([convA[i]['content'] == convB[i]['content'] for i in range(0, len(convA), 2)]), f"Error in {i}"
+                new_data.append(new_item)
+            except:
+                continue
     elif dataset_source == "berkeley-nest/Nectar":
         dataset = load_dataset("berkeley-nest/Nectar")
         new_data = []
@@ -385,6 +391,10 @@ def reformat_data_from_hf_dataset(dataset_source: str, dataset_name: str, seed: 
     else:
         raise NotImplementedError(f"Unknown dataset source: {dataset_source}, please add the processing code in process_and_upload_dataset.py")
 
+    for item in new_data:
+        assert len(item['conv_A']) == len(item['conv_B']), f"Cov_A and conv_B should have the same number of turns in {item['id']}"
+        assert item['num_turns'] > 0, f"num_turns should be greater than 0 in {item['id']}"
+        assert all([item['conv_A'][i]['content'] == item['conv_B'][i]['content'] for i in range(0, len(item['conv_A']), 2)]), f"The user content in conv_A and conv_B should be the same for each turn in {item['id']}"
     random.seed(seed)
     random_idx = random.sample(range(len(new_data)), val_num)
     train_data = [new_data[i] for i in range(len(new_data)) if i not in random_idx]
